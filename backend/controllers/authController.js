@@ -12,7 +12,7 @@ const generateToken = (userId)=>{
 //@access Public
 const registerUser = async(req,res)=>{
     try{
-        const { name, email, password , adminInviteToken,profileImageUrl} = req.body;
+        const { name, email, password , adminInviteToken,profileImage} = req.body;
 
         //Check if user already exists
         const userExists = await User.findOne({email});
@@ -21,7 +21,7 @@ const registerUser = async(req,res)=>{
         }
 
         //Determine user role:Admin if correct token is provided, otherwise Member
-        let role = "member";
+        let role = "user";
         if (
             adminInviteToken &&
             adminInviteToken === process.env.ADMIN_INVITE_TOKEN
@@ -38,7 +38,7 @@ const registerUser = async(req,res)=>{
             name,
             email,
             password: hashedPassword,
-            profileImageUrl,
+            profileImage,
             role
         });
 
@@ -48,7 +48,7 @@ const registerUser = async(req,res)=>{
             name: user.name,
             email: user.email,
             role: user.role,
-            profileImage: user.profileImageUrl,
+            profileImage: user.profileImage,
             token: generateToken(user._id),
         });
     } catch(error){
@@ -77,12 +77,14 @@ const loginUser = async(req,res)=>{
 
         //Return user data with JWT
         res.status(200).json({
+        user: {
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
-            profileImage: user.profileImageUrl,
-            token: generateToken(user._id),
+            profileImage: user.profileImage,
+        },
+        token: generateToken(user._id),
         });
     } catch(error){
         res.status(500).json({message:"Server error", error:error.message});
@@ -107,34 +109,41 @@ const getUserProfile = async(req,res)=>{
 //@desc Update user profile
 //@route PUT /api/auth/profile
 //@access Private {Requires JWT}
-const updateUserProfile = async(req,res)=>{
-    try{
-        const user = await User.findById(req.user.id);
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
 
-        if(!user){
-            return res.status(404).json({message:"User not found"});   
-        }
-
-        user.name = req.body.name || user.name;
-        user.email = req.body.email || user.email;
-
-        if(req.body.password){
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(req.body.password,salt);
-        }
-
-        const updatedUser = await user.save();
-        res.status(200).json({
-            _id: updatedUser._id,
-            name: updatedUser.name,
-            email: updatedUser.email,
-            role: updatedUser.role,
-            profileImage: updatedUser.profileImageUrl,
-            token: generateToken(updatedUser._id),
-        });
-        } catch(error){
-        res.status(500).json({message:"Server error", error:error.message});
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    // Allowed updates only
+    user.name = req.body.name || user.name;
+
+    if (req.body.profileImage !== undefined) {
+      user.profileImage = req.body.profileImage;
+    }
+
+    // Optional password change (keep as-is)
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      profileImage: updatedUser.profileImage,
+      token: generateToken(updatedUser._id),
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
+
 
 module.exports = { registerUser, loginUser, getUserProfile, updateUserProfile };

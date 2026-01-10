@@ -22,21 +22,40 @@ const getTasks = async(req,res)=>{
                         "name email profileImageUrl"
                     );
                 }else{
-                    tasks = await Task.find({...filter,assignedto:req.user._id}).populate(
+                   tasks = await Task.find({
+                        ...filter,
+                        assignedTo: { $in: [req.user._id] }
+                        }).populate(
                         "assignedTo",
                         "name email profileImageUrl"
-
-                    );
+                        );
                 }
 
                 // Add completed todoChecklist count to each task
                 tasks = await Promise.all(
-                    tasks.map(async (task) => {
-                        const completedCount = task.todoChecklist.filter(
-                            (item)=>item.completed
-                        ).length;
-                        return {...task._doc, completedTodoCount: completedCount};
-                    })
+                tasks.map(async (task) => {
+                    const completedCount = task.todoChecklist.filter(
+                    (item)=>item.completed
+                    ).length;
+
+                    const total = task.todoChecklist.length;
+
+                    // Auto update status based on todo progress
+                    if (total > 0 && completedCount === total) {
+                    task.status = "Completed";
+                    } else if (completedCount > 0) {
+                    task.status = "In-Progress";
+                    } else {
+                    task.status = "Pending";
+                    }
+                    await Task.updateOne({ _id: task._id }, { status: task.status });
+
+                    return {
+                    ...task._doc,
+                    completedTodoCount: completedCount,
+                    status: task.status
+                    };
+                })
                 );
 
                 //Status summary counts 
@@ -52,7 +71,7 @@ const getTasks = async(req,res)=>{
 
                 const inProgressTasks = await Task.countDocuments({
                     ...filter,
-                    status:"In Progress",
+                    status:"In-Progress",
                     ...(req.user.role !== "admin" && {assignedTo:req.user._id}),   
                 });
 
@@ -60,6 +79,12 @@ const getTasks = async(req,res)=>{
                     ...filter,
                     status:"Completed",
                     ...(req.user.role !== "admin" && {assignedTo:req.user._id}),   
+                });
+                tasks = tasks.map(task => {
+                if (task.status === "In Progress") {
+                    task.status = "In-Progress";
+                }
+                return task;
                 });
 
                 res.json({
@@ -88,7 +113,10 @@ const getTaskById = async (req,res) => {
       );
 
       if (!task) return res.status(404).json({message:"Task not found"});
-
+      
+      if (task.status === "In Progress") {
+        task.status = "In-Progress";
+    }
       res.json(task);
     }catch(error){
         res.status(500).json({message:"Server error",error: error.message});
@@ -169,7 +197,13 @@ const updateTask = async (req,res) => {
 //@access Private(Admin)
 const deleteTask = async (req,res) => {
     try{
+        const task = await Task.findByIdAndDelete(req.params.id);
 
+        if(!task){
+            return res.status(404).json({message:"Task not found"});
+        }
+
+        res.json({message:"Task deleted successfully"})
     }catch(error){
         res.status(500).json({message:"Server error",error: error.message});
     }
@@ -390,3 +424,5 @@ module.exports = {
     getDashBoardData,
     getUserDashboardData
 };
+
+//4:20:59
