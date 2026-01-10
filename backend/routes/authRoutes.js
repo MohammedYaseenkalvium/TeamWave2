@@ -21,7 +21,7 @@ router.post(
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const imageUrl = `${process.env.BACKEND_URL}/uploads/${req.file.filename}`;
 
     // save image URL to user in DB
     const user = await User.findByIdAndUpdate(
