@@ -33,7 +33,7 @@ const Settings = () => {
         }
       );
 
-      updateUser(response.data);
+      updateUser(response.data.user);
       toast.success("Profile updated successfully");
     } catch (error) {
       toast.error("Failed to update profile");
