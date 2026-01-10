@@ -2,6 +2,12 @@
 
 @import "tailwindcss";
 
+html,body{
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
 
 
 
@@ -9,4 +15,32 @@
     html{
         font-family: 'Poppins', sans-serif;
     }
+}
+
+@layer components {
+  .input-box {
+    @apply w-full flex items-center justify-between gap-3 text-sm text-black bg-slate-100/50 rounded-xl px-4 py-3 border border-slate-200 outline-none;
+  }
+
+
+.card{
+  @apply bg-slate-950 p-6 rounded-2xl border-gray-800;
+}
+
+.card-btn{
+  @apply flex items-center gap-3 text-[12px] font-medium text-slate-300 hover:text-[#4F46E5] bg-slate-900 hover:bg-slate-800 px-4 py-1.5 rounded-lg border border-slate-700 cursor-pointer;
+}
+
+.form-card{
+  @apply bg-slate-950 p-6 rounded-lg  border border-slate-800
+}
+
+.form-input{
+  @apply w-full text-sm text-slate-200 outline-none bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 rounded-md mt-2 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500;
+}
+
+.card-btn-fill{
+  @apply flex items-center gap-3 text-[12px] font-medium text-indigo-400 bg-indigo-500/10 hover:text-blue-500  hover:bg-indigo-500/20 px-4 py-1.5 rounded-lg border border-indigo-500/30 cursor-pointer;
+}
+
 }
